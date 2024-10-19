@@ -67,7 +67,7 @@ Sample AreaSampleLights(uint2 px, uint seed)
 
 	// make ray desc
 	RayDesc ray;
-	ray.Origin = world.xyz + wsnormal * 0.1f;
+	ray.Origin = world.xyz + wsnormal * 0.001f;
 	ray.TMin = /*$(Variable:rayMin)*/;
 	ray.TMax = /*$(Variable:rayMax)*/;
 	ray.Direction = dir;
@@ -92,28 +92,50 @@ float3 ResampledImportanceSampling(uint M, uint2 px)
 	// float w[500];
 	Reservoir r = CreateReservoir();
 	float3 wsnormal = normalize(2.0f * (float3(g_gbuffer[uint3(px,0)].xyz) / 255.0f) - 1.0f);
+	
+	uint temporalRandom = g_temporalInfo[0].TemporalReuse > 0 ? Hash(g_temporalInfo[0].TemporalReuse) : 0;
 	[loop]
 	for(uint i = 0; i < M; i++)
 	{
-		uint seed = Hash(i);
+		uint seed = Hash(i) + temporalRandom;
 		Sample s = AreaSampleLights(px, seed); // we force trace one ray to world Z+ direction, for better results
 		
 		
-		float px = TargetFunction(s);
+		float px_hat = TargetFunction(s);
 		float Wxi = 1.0f;
-		float wi = (1.0f / M) * px * (1.0f);
-		UpdateReservoir(r, s, wi);
+		float wi = px_hat / (1.0f) /*px*/; 
+		UpdateReservoir(r, px_hat, wi);
 		//w_total += wi;
 	}
 	//uint s = (Hash(px.x) + Hash(px.y)) % M;
-	
-	Sample Y = r.y;//samples[s];
+
+	//Temporal Reuse
+	if(/*$(Variable:EnableTemporalReuse)*/)
+	{
+		if(g_temporalInfo[0].TemporalReuse > 0)
+		{
+			Reservoir prevR = GetReservoirFromTexture(g_ReservoirInfoTexture, px);
+			if(prevR.M > 20 * r.M)
+			{
+				prevR.W_sum *= 20.0f * r.M / prevR.M;
+				prevR.M = 20 * r.M;
+			}
+			UpdateReservoir(r, prevR.p_hat_s_x, prevR.p_hat_s_x * prevR.W * prevR.M);
+			r.M += prevR.M;
+			WriteToDebugTexture(prevR.M);
+		}
+	}
+
+	//Sample Y = r.y;//samples[s];
 	float w_total = r.W_sum;
-	float py =  TargetFunction(Y);
+	float py_hat =  r.p_hat_s_x;//TargetFunction(Y);
 	
-	float Wy = w_total / py;
-	
-	float3 finalColor = (py * Y.W) * Wy;
+	float Wy = (1.0f / max(py_hat, 0.0001f)) * ( 1.0f / max(r.M, 0.0001f) * r.W_sum);
+	r.W = Wy;
+
+	WriteToTexture(g_ReservoirInfoTexture, px, r);
+
+	float3 finalColor = (py_hat * 1.0f) * Wy;
 	finalColor = LinearToSRGB(finalColor);
 	return finalColor;
 }
@@ -139,6 +161,8 @@ void RISRayGen()
 	uint2 px = DispatchRaysIndex().xy;
 	s_pixelPos = px;
 	g_randomSeed = Hash(Hash(px.x) + Hash(px.y));
+	g_lightPower = /*$(Variable:LightPower)*/;
+
 	float depth = g_depth[px];
 	if (depth == /*$(Variable:depthClearValue)*/)
 	{

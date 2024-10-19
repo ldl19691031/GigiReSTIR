@@ -5,7 +5,7 @@ static const float c_pi = 3.14159265359f;
 static const float c_twopi = 2.0f * c_pi;
 static uint2 s_pixelPos;
 static uint g_randomSeed = 0;
-
+static float3 g_lightPower = float3(1.0f, 1.0f, 1.0f);
 // Hash function from H. Schechter & R. Bridson, goo.gl/RXiKaH
 uint Hash(uint s)
 {
@@ -33,6 +33,9 @@ struct Reservoir
 	Sample y;
 	float W_sum;
 	uint M;
+
+    float p_hat_s_x;
+    float W;
 };
 Reservoir CreateReservoir(){
 	Reservoir r = (Reservoir)0;
@@ -45,19 +48,46 @@ uint Rand() {
 	g_randomSeed = Hash(temp);
 	return temp;
 }
+int2 RandPixelOffset(uint size)
+{
+    return int2(Rand() % size, Rand() % size) - int2(size / 2, size / 2);
+}
 float FRand01(){
 	return float(Rand() % 10000) / 10000.0f;
 }
-void UpdateReservoir(inout Reservoir r, Sample x, float w)
+void UpdateReservoir(inout Reservoir r, Sample x, float px_hat, float w)
 {
 	r.W_sum += w;
 	r.M = r.M + 1;
 	if(FRand01() < (w / r.W_sum))
 	{
 		r.y = x;
+        r.p_hat_s_x = px_hat;
+	}
+}
+void UpdateReservoir(inout Reservoir r, float px_hat, float w)
+{
+	r.W_sum += w;
+	r.M = r.M + 1;
+	if(FRand01() < (w / r.W_sum))
+	{
+        r.p_hat_s_x = px_hat;
 	}
 }
 
+void WriteToTexture(RWTexture2D<float4> texture, uint2 pos, Reservoir value)
+{
+    texture[pos] = float4(value.W_sum, (float)value.M, value.p_hat_s_x, value.W);
+}
+Reservoir GetReservoirFromTexture(RWTexture2D<float4> texture, uint2 pos)
+{
+    Reservoir value;
+    value.W_sum = texture[pos].x;
+    value.M = (uint)texture[pos].y;
+    value.p_hat_s_x = texture[pos].z;
+    value.W = texture[pos].w;
+    return value;
+}
 void WriteToDebugTexture(float3 value)
 {
 	g_debugTexture[s_pixelPos].xyz = value;
@@ -92,7 +122,7 @@ float BRDF(Sample s, uint2 px)
 }
 float3 Le(Sample s)
 {
-	return float3(1.0f, 1.0f, 1.0f);
+	return float3(1.0f, 1.0f, 1.0f) * g_lightPower;
 }
 float V(Sample s)
 {

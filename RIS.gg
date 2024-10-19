@@ -90,6 +90,95 @@
                 "max": "500",
                 "step": "1"
             }
+        },
+        {
+            "name": "SpatialReuseNum",
+            "type": "Int",
+            "dflt": "5",
+            "visibility": "User",
+            "UISettings": {
+                "UIHint": "Slider",
+                "min": "1",
+                "max": "25",
+                "step": "1"
+            }
+        },
+        {
+            "name": "SpatialReuseRadius",
+            "type": "Int",
+            "dflt": "5",
+            "visibility": "User",
+            "UISettings": {
+                "UIHint": "Slider",
+                "min": "1",
+                "max": "25",
+                "step": "1"
+            }
+        },
+        {
+            "name": "LightPower",
+            "type": "Float",
+            "dflt": "1",
+            "visibility": "User",
+            "UISettings": {
+                "UIHint": "Slider",
+                "min": "1",
+                "max": "100"
+            }
+        },
+        {
+            "name": "EnableTemporalReuse",
+            "type": "Bool",
+            "dflt": "1",
+            "visibility": "User"
+        },
+        {
+            "name": "EnableSpatialReuse",
+            "type": "Bool",
+            "dflt": "1",
+            "visibility": "User"
+        },
+        {
+            "name": "MouseState",
+            "type": "Float4",
+            "dflt": "0.0f, 0.0f, 0.0f, 0.0f",
+            "visibility": "Host"
+        },
+        {
+            "name": "MouseStateLastFrame",
+            "type": "Float4",
+            "dflt": "0.0f, 0.0f, 0.0f, 0.0f",
+            "visibility": "Host"
+        },
+        {
+            "name": "iResolution",
+            "type": "Float3",
+            "dflt": "0.0f, 0.0f, 0.0f",
+            "visibility": "Host"
+        },
+        {
+            "name": "iTime",
+            "type": "Float",
+            "dflt": "0.0",
+            "visibility": "Host"
+        },
+        {
+            "name": "iTimeDelta",
+            "type": "Float",
+            "dflt": "0.0",
+            "visibility": "Host"
+        },
+        {
+            "name": "iFrameRate",
+            "type": "Float",
+            "dflt": "0.0",
+            "visibility": "Host"
+        },
+        {
+            "name": "iFrame",
+            "type": "Float",
+            "dflt": "0.0",
+            "visibility": "Host"
         }
     ],
     "shaders": [
@@ -237,6 +326,21 @@
                     "name": "g_debugTexture",
                     "type": "Texture",
                     "access": "UAV"
+                },
+                {
+                    "name": "g_ReservoirInfoTexture",
+                    "type": "Texture",
+                    "access": "UAV"
+                },
+                {
+                    "name": "g_temporalInfo",
+                    "type": "Buffer",
+                    "access": "UAV",
+                    "buffer": {
+                        "typeStruct": {
+                            "name": "TemporalInfoStruct"
+                        }
+                    }
                 }
             ]
         },
@@ -253,6 +357,67 @@
             "type": "RTMiss",
             "entryPoint": "RISMiss",
             "copyFile": false
+        },
+        {
+            "name": "ReuseSpatially",
+            "fileName": "ReuseSpatially.hlsl",
+            "entryPoint": "csmain",
+            "resources": [
+                {
+                    "name": "g_texture",
+                    "type": "Texture",
+                    "access": "UAV"
+                },
+                {
+                    "name": "g_ReservoirInfoTexture",
+                    "type": "Texture",
+                    "access": "UAV"
+                },
+                {
+                    "name": "g_debugTexture",
+                    "type": "Texture",
+                    "access": "UAV"
+                },
+                {
+                    "name": "g_gbuffer",
+                    "type": "Texture",
+                    "access": "SRV",
+                    "texture": {
+                        "dimension": "Texture2DArray",
+                        "viewType": "Uint4"
+                    }
+                },
+                {
+                    "name": "g_depth",
+                    "type": "Texture",
+                    "access": "SRV",
+                    "texture": {
+                        "viewType": "Float"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "UpdateTemporalInfo",
+            "fileName": "UpdateTemporalInfo.hlsl",
+            "entryPoint": "csmain",
+            "NumThreads": [
+                1,
+                1,
+                1
+            ],
+            "resources": [
+                {
+                    "name": "g_temporalInfo",
+                    "type": "Buffer",
+                    "access": "UAV",
+                    "buffer": {
+                        "typeStruct": {
+                            "name": "TemporalInfoStruct"
+                        }
+                    }
+                }
+            ]
         }
     ],
     "structs": [
@@ -283,6 +448,19 @@
                     "name": "UV",
                     "type": "Float2",
                     "semantic": "UV"
+                }
+            ]
+        },
+        {
+            "name": "TemporalInfoStruct",
+            "fields": [
+                {
+                    "name": "ViewProjMatrix",
+                    "type": "Float4x4"
+                },
+                {
+                    "name": "TemporalReuse",
+                    "type": "Uint"
                 }
             ]
         }
@@ -317,7 +495,7 @@
                 "name": "Scene",
                 "comment": "The raytracing scene",
                 "editorPos": [
-                    589.0,
+                    555.0,
                     -110.0
                 ],
                 "visibility": "Imported"
@@ -367,10 +545,14 @@
             "actionDrawCall": {
                 "name": "GBuffer Fill",
                 "editorPos": [
-                    517.0,
-                    3.0
+                    530.0,
+                    -7.0
                 ],
+                "condition": {
+                    "alwaysFalse": true
+                },
                 "linkProperties": [
+                    {},
                     {},
                     {},
                     {},
@@ -408,6 +590,9 @@
                     {}
                 ],
                 "frontIsCounterClockwise": false,
+                "shadingRateImage": {
+                    "node": "SubGBufferFill"
+                },
                 "vertexBuffer": {
                     "node": "Mesh",
                     "pin": "resource"
@@ -438,7 +623,9 @@
                     {
                         "node": "RayDirectionsTexture"
                     },
-                    {},
+                    {
+                        "node": "SubGBufferFill"
+                    },
                     {},
                     {}
                 ],
@@ -453,8 +640,8 @@
                 "name": "Mesh",
                 "comment": "The rasterization scene",
                 "editorPos": [
-                    397.0,
-                    2.0
+                    107.0,
+                    18.0
                 ],
                 "visibility": "Imported"
             }
@@ -474,10 +661,12 @@
             "actionRayShader": {
                 "name": "DoRT",
                 "editorPos": [
-                    757.0,
-                    -49.0
+                    949.0,
+                    -46.0
                 ],
                 "linkProperties": [
+                    {},
+                    {},
                     {},
                     {},
                     {},
@@ -503,8 +692,8 @@
                     },
                     {
                         "srcPin": "g_depth",
-                        "dstNode": "GBuffer Fill",
-                        "dstPin": "depthTarget"
+                        "dstNode": "SubGBufferFill",
+                        "dstPin": "Depth"
                     },
                     {
                         "srcPin": "g_debugTexture",
@@ -513,8 +702,18 @@
                     },
                     {
                         "srcPin": "g_gbuffer",
-                        "dstNode": "GBuffer Fill",
-                        "dstPin": "colorTarget0"
+                        "dstNode": "SubGBufferFill",
+                        "dstPin": "Normal_Metallic_AO"
+                    },
+                    {
+                        "srcPin": "g_ReservoirInfoTexture",
+                        "dstNode": "ReservoirInfoTexture",
+                        "dstPin": "resource"
+                    },
+                    {
+                        "srcPin": "g_temporalInfo",
+                        "dstNode": "Update Temporal Info",
+                        "dstPin": "g_temporalInfo"
                     }
                 ],
                 "shader": {
@@ -533,18 +732,16 @@
             "resourceTexture": {
                 "name": "DebugTexture",
                 "editorPos": [
-                    763.0,
-                    114.0
+                    580.0,
+                    290.0
                 ],
                 "visibility": "Exported",
                 "format": {
-                    "node": {
-                        "name": "GBuffer"
-                    }
+                    "format": "RGBA16_Float"
                 },
                 "size": {
                     "node": {
-                        "name": "GBuffer"
+                        "name": "AO Result"
                     }
                 }
             }
@@ -570,6 +767,414 @@
                     ]
                 },
                 "dimension": "Texture2DArray"
+            }
+        },
+        {
+            "resourceTexture": {
+                "name": "ReservoirInfoTexture",
+                "editorPos": [
+                    540.0,
+                    242.0
+                ],
+                "transient": false,
+                "format": {
+                    "format": "RGBA16_Float"
+                },
+                "size": {
+                    "node": {
+                        "name": "AO Result"
+                    }
+                }
+            }
+        },
+        {
+            "actionComputeShader": {
+                "name": "Reuse Spatially",
+                "editorPos": [
+                    1205.0,
+                    -49.0
+                ],
+                "condition": {
+                    "variable1": "EnableSpatialReuse",
+                    "value2": "true"
+                },
+                "linkProperties": [
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {}
+                ],
+                "connections": [
+                    {
+                        "srcPin": "g_depth",
+                        "dstNode": "DoRT",
+                        "dstPin": "g_depth"
+                    },
+                    {
+                        "srcPin": "g_texture",
+                        "dstNode": "DoRT",
+                        "dstPin": "g_texture"
+                    },
+                    {
+                        "srcPin": "g_ReservoirInfoTexture",
+                        "dstNode": "DoRT",
+                        "dstPin": "g_ReservoirInfoTexture"
+                    },
+                    {
+                        "srcPin": "g_debugTexture",
+                        "dstNode": "DoRT",
+                        "dstPin": "g_debugTexture"
+                    },
+                    {
+                        "srcPin": "g_gbuffer",
+                        "dstNode": "DoRT",
+                        "dstPin": "g_gbuffer"
+                    }
+                ],
+                "shader": {
+                    "name": "ReuseSpatially"
+                },
+                "dispatchSize": {
+                    "node": {
+                        "name": "AO Result"
+                    },
+                    "indirectBuffer": {
+                        "node": "SubGBufferFill"
+                    },
+                    "preAdd": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                "entryPoint": "csmain"
+            }
+        },
+        {
+            "resourceBuffer": {
+                "name": "TemporalInfo",
+                "editorPos": [
+                    571.0,
+                    338.0
+                ],
+                "transient": false,
+                "format": {
+                    "structureType": {
+                        "name": "TemporalInfoStruct"
+                    }
+                }
+            }
+        },
+        {
+            "actionComputeShader": {
+                "name": "Update Temporal Info",
+                "editorPos": [
+                    773.0,
+                    127.0
+                ],
+                "linkProperties": [
+                    {},
+                    {}
+                ],
+                "connections": [
+                    {
+                        "srcPin": "g_temporalInfo",
+                        "dstNode": "TemporalInfo",
+                        "dstPin": "resource"
+                    }
+                ],
+                "shader": {
+                    "name": "UpdateTemporalInfo"
+                },
+                "dispatchSize": {
+                    "indirectBuffer": {
+                        "node": "SubGBufferFill"
+                    }
+                },
+                "entryPoint": "csmain"
+            }
+        },
+        {
+            "actionSubGraph": {
+                "name": "SubGBufferFill",
+                "editorPos": [
+                    288.0,
+                    240.0
+                ],
+                "linkProperties": [
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {}
+                ],
+                "connections": [
+                    {
+                        "srcPin": "VertexBuffer",
+                        "dstNode": "Mesh",
+                        "dstPin": "resource"
+                    },
+                    {
+                        "srcPin": "Model Albedo",
+                        "dstNode": "Model Albedo",
+                        "dstPin": "resource"
+                    },
+                    {
+                        "srcPin": "Model Roughness",
+                        "dstNode": "Model Roughness",
+                        "dstPin": "resource"
+                    },
+                    {
+                        "srcPin": "Model Normal",
+                        "dstNode": "Model Normal",
+                        "dstPin": "resource"
+                    },
+                    {
+                        "srcPin": "Model Metallic",
+                        "dstNode": "Model Metallic",
+                        "dstPin": "resource"
+                    },
+                    {
+                        "srcPin": "Model AO"
+                    },
+                    {
+                        "srcPin": "Albedo_Roughness"
+                    },
+                    {
+                        "srcPin": "Normal_Metallic_AO"
+                    },
+                    {
+                        "srcPin": "Depth"
+                    },
+                    {
+                        "srcPin": "GBuffer Debug"
+                    }
+                ],
+                "fileName": "FillGBuffer.gg",
+                "subGraphData": {
+                    "importedResources": [
+                        "VertexBuffer",
+                        "Model Albedo",
+                        "Model Roughness",
+                        "Model Normal",
+                        "Model Metallic",
+                        "Model AO"
+                    ],
+                    "exportedResources": [
+                        "Albedo_Roughness",
+                        "Normal_Metallic_AO",
+                        "Depth",
+                        "GBuffer Debug"
+                    ],
+                    "variables": [
+                        {
+                            "name": "MouseState",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "MouseStateLastFrame",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "iResolution",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "iTime",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "iTimeDelta",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "iFrameRate",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "iFrame",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "iMouse",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "ViewMtx",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "InvViewMtx",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "ProjMtx",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "InvProjMtx",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "ViewProjMtx",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "InvViewProjMtx",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "CameraPos",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "CameraChanged",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "DepthClearValue",
+                            "visibility": "Host"
+                        },
+                        {
+                            "name": "RenderSize",
+                            "visibility": "User"
+                        },
+                        {
+                            "name": "DebugMode",
+                            "visibility": "User"
+                        },
+                        {
+                            "name": "NormalMapping",
+                            "visibility": "User"
+                        }
+                    ]
+                },
+                "variableSettings": [
+                    {
+                        "name": "MouseState",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "MouseStateLastFrame",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "iResolution",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "iTime",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "iTimeDelta",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "iFrameRate",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "iFrame",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "iMouse",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "ViewMtx",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "InvViewMtx",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "ProjMtx",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "InvProjMtx",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "ViewProjMtx",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "InvViewProjMtx",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "CameraPos",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "CameraChanged",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "DepthClearValue",
+                        "visibility": "Host"
+                    },
+                    {
+                        "name": "RenderSize",
+                        "visibility": "User"
+                    },
+                    {
+                        "name": "DebugMode",
+                        "visibility": "User"
+                    },
+                    {
+                        "name": "NormalMapping",
+                        "visibility": "User"
+                    }
+                ]
+            }
+        },
+        {
+            "resourceTexture": {
+                "name": "Model Albedo",
+                "editorPos": [
+                    115.0,
+                    258.0
+                ],
+                "visibility": "Imported"
+            }
+        },
+        {
+            "resourceTexture": {
+                "name": "Model Roughness",
+                "editorPos": [
+                    94.0,
+                    306.0
+                ]
+            }
+        },
+        {
+            "resourceTexture": {
+                "name": "Model Normal",
+                "editorPos": [
+                    111.0,
+                    354.0
+                ]
+            }
+        },
+        {
+            "resourceTexture": {
+                "name": "Model Metallic",
+                "editorPos": [
+                    107.0,
+                    402.0
+                ]
             }
         }
     ],

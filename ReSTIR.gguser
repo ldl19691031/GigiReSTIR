@@ -1,0 +1,126 @@
+{
+    "systemVars": {
+        "iFrame_varName": "frameIndex",
+        "camera": {
+            "farPlane": 10000.0,
+            "flySpeed": 5.0,
+            "startingCameraPos": [
+                0.0,
+                100.0,
+                0.0
+            ],
+            "startingCameraAltitudeAzimuth": [
+                0.0699014812707901,
+                1.6642965078353882
+            ]
+        },
+        "ProjMtx_textureName": "GBuffer"
+    },
+    "resourceViewNodeIndex": 11,
+    "resourceViewResourceIndex": 6,
+    "vsync": false,
+    "importedResources": [
+        {
+            "nodeName": "Mesh",
+            "resetEveryFrame": false,
+            "isATexture": false,
+            "buffer": {
+                "fileName": "..\\OBJAssets\\sponza\\sponza.obj",
+                "structIndex": 0
+            }
+        },
+        {
+            "nodeName": "RayDirectionsTexture",
+            "resetEveryFrame": false,
+            "texture": {
+                "fileName": "sphere_coshemi_gauss1_0.png",
+                "fileIsSRGB": false,
+                "size": [
+                    128,
+                    128,
+                    1
+                ],
+                "format": "RGBA32_Float"
+            }
+        },
+        {
+            "nodeName": "Scene",
+            "resetEveryFrame": false,
+            "isATexture": false,
+            "buffer": {
+                "fileName": "..\\OBJAssets\\sponza\\sponza.obj",
+                "type": "Float3"
+            }
+        }
+    ],
+    "savedVariables": [
+        {
+            "name": "Render_Size",
+            "value": "1366,768"
+        },
+        {
+            "name": "depthClearValue",
+            "value": "0.000000"
+        },
+        {
+            "name": "rayMin",
+            "value": "0.100000"
+        },
+        {
+            "name": "rayMax",
+            "value": "100000.000000"
+        },
+        {
+            "name": "distanceIsShade",
+            "value": "true"
+        },
+        {
+            "name": "AOPower",
+            "value": "2.000000"
+        },
+        {
+            "name": "SourceIsUnorm",
+            "value": "true"
+        },
+        {
+            "name": "ApplyInTangentSpace",
+            "value": "true"
+        },
+        {
+            "name": "directLightDir",
+            "value": "0.000000,-1.000000,0.000000"
+        },
+        {
+            "name": "enableRandomSample",
+            "value": "true"
+        },
+        {
+            "name": "RandomSampleNum",
+            "value": "49"
+        },
+        {
+            "name": "SpatialReuseNum",
+            "value": "24"
+        },
+        {
+            "name": "SpatialReuseRadius",
+            "value": "5"
+        },
+        {
+            "name": "LightPower",
+            "value": "4.400000"
+        },
+        {
+            "name": "EnableTemporalReuse",
+            "value": "true"
+        },
+        {
+            "name": "EnableSpatialReuse",
+            "value": "true"
+        },
+        {
+            "name": "iFrame",
+            "value": "0.000000"
+        }
+    ]
+}

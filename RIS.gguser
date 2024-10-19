@@ -16,8 +16,8 @@
         },
         "ProjMtx_textureName": "GBuffer"
     },
-    "resourceViewNodeIndex": 7,
-    "resourceViewResourceIndex": 7,
+    "resourceViewNodeIndex": 11,
+    "resourceViewResourceIndex": 6,
     "vsync": false,
     "importedResources": [
         {
@@ -97,6 +97,26 @@
         {
             "name": "RandomSampleNum",
             "value": "32"
+        },
+        {
+            "name": "SpatialReuseNum",
+            "value": "25"
+        },
+        {
+            "name": "SpatialReuseRadius",
+            "value": "5"
+        },
+        {
+            "name": "LightPower",
+            "value": "4.400000"
+        },
+        {
+            "name": "EnableTemporalReuse",
+            "value": "true"
+        },
+        {
+            "name": "EnableSpatialReuse",
+            "value": "true"
         }
     ]
 }
